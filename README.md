@@ -7,11 +7,11 @@ Simple package management system to ensure the name space for each directory or 
 Example
 ------
 
-Directory to read have "__init__.lisp"
+Directory to read have "__main__.lisp"
 
     in /home/user directory
     test
-    ├── __init__.lisp
+    ├── __main__.lisp
     ├── export.lisp
     ├── require.lisp
     ├── locate.lisp
@@ -19,12 +19,12 @@ Directory to read have "__init__.lisp"
     ├── others
     │   └── test.lisp
     └── utils
-        ├── __init__.lisp
+        ├── __main__.lisp
         ├── list.lisp
         ├── path.lisp
         └── string.lisp
     
-If you change "__init__.lisp" to "__read__.lisp"
+If you change "__main__.lisp" to "__read__.lisp"
 
     CL-USER> (defparameter sl:*target-file* "__read__.lisp")
  
@@ -50,7 +50,6 @@ If you change "__init__.lisp" to "__read__.lisp"
     #<PACKAGE TEST.LOCATE>
     #<PACKAGE TEST.OPTIONS>
     #<PACKAGE TEST>
-    #<PACKAGE COMMON-LISP-USER>
  
 Can also require the partial
 
@@ -59,13 +58,11 @@ Can also require the partial
     #<PACKAGE TEST.UTILS.PATH>
     #<PACKAGE TEST.UTILS.STRING>
     #<PACKAGE TEST.UTILS>
-    #<PACKAGE COMMON-LISP-USER>
 
 If you want to reload
 
     CL-USER> (sl:require :test.utils.string :force t)
     #<PACKAGE TEST.UTILS.STRING>
-    #<PACKAGE COMMON-LISP-USER>
 
 ### Import ###
 
@@ -75,7 +72,7 @@ If you want to write package that depends on
 
 ### Export ###
 
-After "__init__.lisp" is added this, require package
+After "__main__.lisp" is added this, require package
 
     (sl:inherit-export)
 

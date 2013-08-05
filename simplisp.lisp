@@ -7,7 +7,7 @@
 (defparameter *load-paths* '("./" "../" "~/" "~/.lisp/"))
 
 (export '*target-file*)
-(defparameter *target-file* "__init__.lisp")
+(defparameter *target-file* "__main__.lisp")
 
 (export '*extension*)
 (defparameter *extension* "lisp")
@@ -36,6 +36,19 @@
 (export 'performance)
 (defmacro performance (times &body body)
   `(time (dotimes (x ,times) ,@body)))
+
+(export 'with-gensyms)
+(defmacro with-gensyms (names &body forms)
+  `(let ,(mapcar (lambda (name)
+                   (multiple-value-bind (symbol string)
+                       (etypecase name
+                         (symbol
+                          (values name (symbol-name name)))
+                         ((cons symbol (cons string-designator null))
+                          (values (first name) (string (second name)))))
+                     `(,symbol (gensym ,string))))
+                 names)
+     ,@forms))
 
 (export 'minitest)
 (defmacro minitest (form result &key (test #'equal))
@@ -118,8 +131,9 @@
 ;; "/home/user/test.lisp"
 (export 'namestring+)
 (defun namestring+ (&rest other-args)
-  (string-join "" (mapcar #'(lambda (x) (if (stringp x) x
-                                            (namestring x))) other-args)))
+  (string-join "" (mapcar #'(lambda (x) (cond ((null x) "")
+                                              ((stringp x) x)
+                                              (t (namestring x)))) other-args)))
 
 ;;===================
 ;; Path
@@ -475,7 +489,7 @@
          (format t "~S~%" *package*)
          (if ,(eql :tree type)
              (dolist (pkg ',(mapcar #'simplisp-symbol (nconc (child-tree simplisp) (child-module simplisp))))
-               (use-package pkg)))
+                 (use-package pkg)))
          (cl:load ,path)
          (in-package ,current)))))
 
@@ -485,24 +499,30 @@
 ;; EXPORT
 ;;=================== 
 
+(export '*require*)
+(defparameter *require* (make-hash-table :test #'eql))
+
 (shadow 'require)
 (export 'require)
-(defmacro require (simplisp &key (force nil))
-  (let (acc
-        (obj (make-instance '<simplisp> :keyword simplisp)))
+(defun require (module &key (force nil))
+  (let ((obj (make-instance '<simplisp> :keyword module)))
     (if (simplisp-symbol obj)
-        (dolist (pkg (simplisp-load-object obj) (push 'progn acc))
-          (if (or force (null (find-package (simplisp-symbol pkg))))
-              (push (simplisp-require-form pkg) acc))))))
+          (let ((objs (nreverse (simplisp-load-object obj))))
+            (if force
+                (dolist (obj objs T)
+                  (setf (gethash (simplisp-symbol obj) *require*) nil)))
+            (dolist (obj objs T)
+              (if (null (gethash (simplisp-symbol obj) *require*))
+                  (progn
+                    (eval (simplisp-require-form obj))
+                    (setf (gethash (simplisp-symbol obj) *require*) obj))))))))
 
 (shadow 'import)
 (export 'import)
-(defmacro import (simplisp &key (force nil))
-  `(progn
-     (require ,simplisp :force ,force)
-     (if ,force
-         (unuse-package ,simplisp))
-     (use-package ,simplisp)))
+(defun import (module &key (force nil))
+  (progn
+    (require module :force force)
+    (use-package module)))
 
 (export 'external-symbols)
 (defun external-symbols (package)
@@ -512,8 +532,8 @@
     symbols))
 
 (export 'external-symbols-export)
-(defun external-symbols-export (&rest simplispname)
-  (dolist (package simplispname t)
+(defun external-symbols-export (&rest packages)
+  (dolist (package packages t)
     (do-external-symbols (sym (find-package package))
       (export sym))))
 
@@ -525,7 +545,8 @@
 
 (shadow 'search)
 (export 'search)
-(defmacro search (simplisp)
-  (let ((obj (make-instance '<simplisp> :keyword simplisp)))
+(defun search (module)
+  (let ((obj (make-instance '<simplisp> :keyword module)))
     (if (simplisp-symbol obj)
         (simplisp-where obj))))
+

@@ -1,8 +1,0 @@
-(defpackage test
-  (:use :cl))
-
-
-
-
-
-

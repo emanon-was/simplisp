@@ -10,34 +10,32 @@ Example
 Directory to read have "__main__.lisp"
 
     in /home/user directory
+
     test
     ├── __main__.lisp
     ├── __test__.lisp
-    ├── export.lisp
-    ├── require.lisp
-    ├── locate.lisp
+    ├── classes.lisp
+    ├── exports.lisp
     ├── options.lisp
-    ├── others
-    │   └── test.lisp
+    ├── tests
+    │   ├── __main__.lisp
+    │   └── __test__.lisp
     └── utils
         ├── __main__.lisp
         ├── __test__.lisp
         ├── list.lisp
+        ├── macro.lisp
         ├── path.lisp
         └── string.lisp
-    
-If you change "__main__.lisp" to "__read__.lisp"
 
-    CL-USER> (defparameter sl:*main-file* "__read__.lisp")
- 
 ### Load Paths ###
 
-    CL-USER> sl:*load-paths*
-    ("./" "../" "./*/")
-    CL-USER> (sl:add-load-paths "~/")
-    ("./" "../" "./*/" "~/")
+    CL-USER> sl::*load-paths*
+    ("./" "../" "~/")
+    CL-USER> (sl:add-load-paths "~/.lisp/")
+    ("./" "../" "~/" "~/.lisp/")
 
-### Require Package ###
+### Require System ###
 
     CL-USER> (sl:require :test)
     #<PACKAGE TEST.UTILS.LIST>
@@ -51,7 +49,8 @@ Can also require the partial
     CL-USER> (sl:require :test.utils)
     #<PACKAGE TEST.UTILS.LIST>
     #<PACKAGE TEST.UTILS.PATH>
-    #<PACKAGE TEST.UTILS.STRING>
+    ....
+    #<PACKAGE TEST.UTILS.MACRO>
     #<PACKAGE TEST.UTILS>
 
 If you want to reload
@@ -59,24 +58,27 @@ If you want to reload
     CL-USER> (sl:require :test.utils.string :force t)
     #<PACKAGE TEST.UTILS.STRING>
 
-### Import ###
+### Import System ###
 
-If you want to write package that depends on
+If you want to write system that depends on (require & use-package)
 
     (sl:import :test.utils)
 
-### Export ###
+### Export Symbols ###
 
-add this to "__main__.lisp" in package
+There is no need to write "export" in other than "__main__.lisp"  
+If you want to inherit all of the export function of the same layer
 
+    in "__main__.lisp"
     (sl:inherit-export)
 
 If you want to inherit-export the partical
 
+    in "__main__.lisp"
     (sl:external-symbols-export :test.utils)
 
 
-### Test ###
+### Test System ###
 
 load "__test__.lisp"
 
@@ -103,9 +105,10 @@ load "__test__.lisp"
      TEST.UTILS.LIST:LAST1
      TEST.UTILS.PATH:BASENAME .... )
 
-Depends
+Implementation
 ------
-CLISP,SBCL,ClozureCL,ABCL
+CLISP,SBCL,ClozureCL,ABCL  
+Maybe ... AllegroCL,LispWorks
 
 Impressions
 ------

@@ -1,4 +1,6 @@
-(sl:import :test.utils.string)
+(sl:import :simplisp-test.utils.list)
+(sl:import :simplisp-test.utils.macro)
+(sl:import :simplisp-test.utils.string)
 
 ;;===================
 ;; Path
@@ -11,7 +13,6 @@
 (defun component-present-p (value)
   (and value (not (eql value :unspecific))))
 
-(export 'directory-pathname-p)
 (defun directory-pathname-p (pathspec)
   (if pathspec
       (and
@@ -19,7 +20,6 @@
        (not (component-present-p (pathname-type pathspec)))
        pathspec)))
 
-(export 'pathname-as-directory)
 (defun pathname-as-directory (pathspec)
   (let ((pathname (pathname pathspec)))
     (when (wild-pathname-p pathname)
@@ -50,7 +50,6 @@
                  :type nil
                  :defaults wildcard))
 
-(export 'list-directory)
 (defun list-directory (dirname &key (follow-symlinks t))
   (declare (ignorable follow-symlinks))
   (when (wild-pathname-p dirname)
@@ -123,7 +122,6 @@
 
 ;; CL-USER> (pathname-exist-p #P"~")
 ;; #P"/home/user/"
-(export 'pathname-exist-p)
 (defun pathname-exist-p (pathspec)
   (let ((pathname (file-exists-p pathspec)))
     (if pathname
@@ -133,7 +131,6 @@
 ;; #P"/home/user/"
 ;; CL-USER> (directory-exist-p #P"~/test.lisp")
 ;; NIL
-(export 'directory-exist-p)
 (defun directory-exist-p (pathspec)
   (if pathspec
       (let ((pathname (pathname-exist-p pathspec)))
@@ -144,7 +141,6 @@
 ;; NIL
 ;; CL-USER> (file-exist-p #P"/home/user/test.lisp")
 ;; #P"/home/test/test.lisp"
-(export 'file-exist-p)
 (defun file-exist-p (pathspec)
   (if pathspec
       (let ((pathname (pathname-exist-p pathspec)))
@@ -153,7 +149,6 @@
 
 ;; CL-USER> (dirname #P"/home/user/")
 ;; #P"/home/"
-(export 'dirname)
 (defun dirname (pathspec)
   (let ((pathname (pathname-exist-p pathspec)))
     (if pathname
@@ -167,12 +162,10 @@
 ;; "user"
 ;; CL-USER> (basename #P"/home/user/test.lisp")
 ;; "test.lisp"
-(export 'basename)
 (defun basename (pathspec)
   (let ((pathname (pathname-exist-p pathspec)))
     (if pathname
         (if (directory-pathname-p pathname)
             (car (last (pathname-directory pathname)))
             (file-namestring pathname)))))
-
 

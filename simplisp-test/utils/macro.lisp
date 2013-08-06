@@ -1,7 +1,5 @@
-(sl:inherit-export)
-
 ;;===================
-;; Test
+;; Macro
 ;;=================== 
 
 ;; CL-USER> (performance 1000 (+ 1 2 3))
@@ -11,19 +9,12 @@
 ;;   100.00% CPU
 ;;   2,232 processor cycles
 ;;   0 bytes consed
-(export 'performance)
 (defmacro performance (times &body body)
   `(time (dotimes (x ,times) ,@body)))
 
 (defmacro with-gensyms (syms &body body)
-  `(let ,(mapcar #'(lambda (s) (list s '(gensym))) syms)
+  `(let ,(mapcar #'(lambda (s)
+                     `(,s (gensym)))
+                 syms)
      ,@body))
-
-(export 'minitest)
-(defmacro minitest (form result &key (test #'equal))
-  `(let* ((real ,form)
-          (bool (funcall ,test real ,result)))
-     (format t " ~:[FAIL~;PASS~] ... ~S => ~S~%~10t~S~%"
-             bool ',form real ,result)
-     bool))
 

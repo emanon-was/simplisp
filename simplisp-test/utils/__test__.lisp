@@ -1,4 +1,5 @@
-(use-package :sl.test)
+(use-package :simplisp-test.utils)
+(use-package :simplisp-test.tests)
 
 (deftest last1.1
     (last1 '(1 2 3 4 5)) 5)

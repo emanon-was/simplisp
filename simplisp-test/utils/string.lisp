@@ -6,7 +6,6 @@
 ;; ("abc" "def" "ghi" "jkl")
 ;; CL-USER> (string-split #\, "abc,def,ghi,jkl")
 ;; ("abc" "def" "ghi" "jkl")
-(export 'string-split)
 (defun string-split (separator string &key (test #'char=))
   (let* ((sep (if (stringp separator) separator (princ-to-string separator)))
          (str (if (stringp string) string (princ-to-string string)))
@@ -22,7 +21,6 @@
 ;; "abc,def,ghi,jkl"
 ;; CL-USER> (string-join #\, '("abc" "def" "ghi" "jkl"))
 ;; "abc,def,ghi,jkl"
-(export 'string-join)
 (defun string-join (delimiter list)
   (if (listp list)
       (let ((del (if (stringp delimiter) delimiter (princ-to-string delimiter))))
@@ -32,19 +30,18 @@
 ;; "sl00p"
 ;; CL-USER> (string-gsub #\e #\0 "sleep")
 ;; "sl00p"
-(export 'string-gsub)
 (defun string-gsub (match replacement string &key (test #'char=))
   (string-join replacement (string-split match string :test test)))
 
 ;; CL-USER> (string+ "abc" "def" "efg")
 ;; "abcdefefg"
-(export 'string+)
 (defun string+ (&rest other-args)
   (string-join "" other-args))
 
 ;; CL-USER> (namestring+ #P"/home/user/" "test" "." "lisp")
 ;; "/home/user/test.lisp"
-(export 'namestring+)
 (defun namestring+ (&rest other-args)
-  (string-join "" (mapcar #'(lambda (x) (if (stringp x) x
-                                            (namestring x))) other-args)))
+  (string-join "" (mapcar #'(lambda (x) (cond ((null x) "")
+                                              ((stringp x) x)
+                                              (t (namestring x)))) other-args)))
+

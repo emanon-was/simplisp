@@ -1,13 +1,4 @@
-;;
-;; in simplisp directory
-;;
-
-(if (null (find-package :simplisp))
-    (load "./simplisp.lisp"))
-
-(in-package :simplisp)
-
-(rem-all-tests)
+(use-package :sl.test)
 
 (deftest last1.1
     (last1 '(1 2 3 4 5)) 5)
@@ -95,62 +86,5 @@
     (basename "/bin/bash")
   "bash")
 
-;;---------------------------------
-
-(defvar slobj1 (make-instance '<simplisp> :keyword :test))
-(defvar slobj2 (make-instance '<simplisp> :keyword :test.utils))
-(defvar slobj3 (make-instance '<simplisp> :keyword :test.utils.string))
-
-(deftest simplisp-symbol.1
-    (simplisp-symbol slobj1)
-  :test)
-(deftest simplisp-symbol.2
-    (simplisp-symbol slobj2)
-  :test.utils)
-(deftest simplisp-symbol.3
-    (simplisp-symbol slobj3)
-  :test.utils.string)
-
-(deftest child-tree.1
-    (not (null (child-tree slobj1)))
-  t)
-(deftest child-tree.2
-    (child-tree slobj2)
-  nil)
-(deftest child-tree.3
-    (child-tree slobj3)
-  nil)
-
-(deftest child-module.1
-    (not (null (child-module slobj1)))
-  t)
-(deftest child-module.2
-    (not (null (child-module slobj2)))
-  t)
-(deftest child-module.3
-    (child-module slobj3)
-  nil)
-
-(deftest simplisp-load-object.1
-    (not (null (simplisp-load-object slobj1)))
-  t)
-(deftest simplisp-load-object.2
-    (not (null (simplisp-load-object slobj2)))
-  t)
-(deftest simplisp-load-object.3
-    (mapcar #'simplisp-symbol (simplisp-load-object slobj3))
-  (:test.utils.string))
-
-(deftest require.3
-    (require :test.utils.string)
-  t)
-
-(deftest require.2
-    (require :test.utils)
-  t)
-
-(deftest require.1
-    (require :test)
-  t)
-
 (do-tests)
+(rem-all-tests)

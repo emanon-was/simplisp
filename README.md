@@ -12,6 +12,7 @@ Directory to read have "__main__.lisp"
     in /home/user directory
     test
     ├── __main__.lisp
+    ├── __test__.lisp
     ├── export.lisp
     ├── require.lisp
     ├── locate.lisp
@@ -20,13 +21,14 @@ Directory to read have "__main__.lisp"
     │   └── test.lisp
     └── utils
         ├── __main__.lisp
+        ├── __test__.lisp
         ├── list.lisp
         ├── path.lisp
         └── string.lisp
     
 If you change "__main__.lisp" to "__read__.lisp"
 
-    CL-USER> (defparameter sl:*target-file* "__read__.lisp")
+    CL-USER> (defparameter sl:*main-file* "__read__.lisp")
  
 ### Load Paths ###
 
@@ -40,14 +42,7 @@ If you change "__main__.lisp" to "__read__.lisp"
     CL-USER> (sl:require :test)
     #<PACKAGE TEST.UTILS.LIST>
     #<PACKAGE TEST.UTILS.PATH>
-    #<PACKAGE TEST.UTILS.STRING>
-    #<PACKAGE TEST.UTILS.STRING>
-    #<PACKAGE TEST.UTILS>
-    #<PACKAGE TEST.REQUIRE>
-    #<PACKAGE TEST.OPTIONS>
-    #<PACKAGE TEST.LOCATE>
-    #<PACKAGE TEST.EXPORT>
-    #<PACKAGE TEST.LOCATE>
+    ....
     #<PACKAGE TEST.OPTIONS>
     #<PACKAGE TEST>
  
@@ -72,14 +67,30 @@ If you want to write package that depends on
 
 ### Export ###
 
-After "__main__.lisp" is added this, require package
+add this to "__main__.lisp" in package
 
     (sl:inherit-export)
 
-or CUI
+If you want to inherit-export the partical
 
-    CL-USER> (in-package :test.utils)
-    CL-USER> (sl:inherit-export)
+    (sl:external-symbols-export :test.utils)
+
+
+### Test ###
+
+load "__test__.lisp"
+
+    CL-USER> (sl:test :test.utils)
+    ---------Test Start---------
+    #<PACKAGE TEST.UTILS-TEST>
+    ;; Loading file /Users/emanon/.simplisp/test/utils/__test__.lisp ...
+    Doing 22 pending tests of 22 tests total.
+     LAST1.1 SINGLE.1 FILTER.1 STRING-SPLIT.1 STRING-SPLIT.2 STRING-JOIN.1
+     .......
+     DIRNAME.1 DIRNAME.2 DIRNAME.3 BASENAME.1 BASENAME.2
+    No tests failed.
+    ;; Loaded file /Users/emanon/.simplisp/test/utils/__test__.lisp
+    ----------Test End----------
 
 ### ETC ###
 
@@ -90,16 +101,7 @@ or CUI
     (TEST.UTILS.STRING:STRING+
      TEST.UTILS.LIST:FILTER
      TEST.UTILS.LIST:LAST1
-     TEST.UTILS.PATH:BASENAME
-     TEST.UTILS.PATH:PATHNAME-ABSOLUTE
-     TEST.UTILS.PATH:FILE-EXIST-P TEST.UTILS.PATH:DIRNAME
-     TEST.UTILS.PATH:LIST-DIRECTORY
-     TEST.UTILS.LIST:SINGLE TEST.UTILS.STRING:STRING-JOIN
-     TEST.UTILS.STRING:STRING-GSUB
-     TEST.UTILS.STRING:STRING-SPLIT
-     TEST.UTILS.PATH:NAMESTRING+
-     TEST.UTILS.PATH:DIRECTORY-EXIST-P
-     TEST.UTILS.PATH:PATHNAME-EXIST-P)
+     TEST.UTILS.PATH:BASENAME .... )
 
 Depends
 ------

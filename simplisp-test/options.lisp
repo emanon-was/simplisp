@@ -1,10 +1,13 @@
+(simplisp:import :simplisp-test.utils)
 
-(defparameter *load-paths* '("./" "../" "~/" "~/.lisp/"))
+;;===================
+;; OPTIONS
+;;=================== 
+
+(defparameter *repository* '("./" "../" "~/" "~/.lisp/"))
+(push (dirname (dirname *load-pathname*)) *repository*)
 (defparameter *main-file* "__main__.lisp")
 (defparameter *test-file* "__test__.lisp")
 (defparameter *ignore-files* (list *main-file* *test-file*))
 (defparameter *extension* "lisp")
-
-(defun add-load-paths (&rest load-paths)
-  (nconc *load-paths* load-paths))
 

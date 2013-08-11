@@ -1,6 +1,6 @@
-(sl:import :simplisp-test.utils.list)
-(sl:import :simplisp-test.utils.macro)
-(sl:import :simplisp-test.utils.string)
+(simple:import '(:simplisp-test.utils.list
+                 :simplisp-test.utils.macro
+                 :simplisp-test.utils.string))
 
 ;;===================
 ;; Path

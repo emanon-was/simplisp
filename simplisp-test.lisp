@@ -3,159 +3,76 @@
 ;;
 
 (if (null (find-package :simplisp))
-    (load "simplisp.lisp"))
-
-(sl:require :simplisp-test)   
+    (load (merge-pathnames
+           (make-pathname :directory (pathname-directory *load-truename*))
+           "simplisp.lisp")))
 
 (in-package :simplisp)
-(use-package :simplisp-test.tests)
 
-(rem-all-tests)
+(defun same (arg0 arg1)
+  (labels ((type-match (type)
+             (and (typep arg0 type)
+                  (typep arg1 type))))
+    (cond ((type-match 'symbol)   (eq arg0 arg1))
+          ((type-match 'fixnum)   (= arg0 arg1))
+          ((type-match 'string)   (equal arg0 arg1))
+          ((type-match 'list)     (equalp arg0 arg1))
+          ((type-match 'pathname) (pathname-match-p arg0 arg1))
+          (t                      (equalp arg0 arg1)))))
 
-(deftest last1.1
-    (last1 '(1 2 3 4 5)) 5)
+(defmacro minitest (form expect)
+  `(let ((result ,form))
+     (if (same result ,expect)
+         (prog1 t   (format t " [PASS] : ~S~%~10t(SAME ~S ~S)~%" ',form result ,expect))
+         (prog1 nil (format t " [FAIL] : ~S~%~10t(NOT (SAME ~S ~S))~%" ',form result ,expect)))))
 
-(deftest single.1
-    (single '(1)) 1)
-
-(deftest filter.1
-    (filter #'(lambda (x) (if (oddp x) x)) '(1 2 3 4 5))
-  (1 3 5))
-
-(deftest string-split.1
-    (string-split "," "abc,def,ghi,jkl")
-  ("abc" "def" "ghi" "jkl"))
-
-(deftest string-split.2
-    (string-split #\, "abc,def,ghi,jkl")
-  ("abc" "def" "ghi" "jkl"))
-
-(deftest string-join.1
-    (string-join "," '("abc" "def" "ghi" "jkl"))
-  "abc,def,ghi,jkl")
-
-(deftest string-join.2
-    (string-join #\, '("abc" "def" "ghi" "jkl"))
-  "abc,def,ghi,jkl")
-
-(deftest string+.1
-    (string+ "abc" "def" "efg")
-  "abcdefefg")
-
-(deftest namestring+.1
-    (namestring+ #P"/home/user/" "test" "." "lisp")
-  "/home/user/test.lisp")
-
-(deftest directory-pathname-p.1
-    (directory-pathname-p "~/test.lisp")
-  nil)
-
-(deftest directory-pathname-p.2
-    (directory-pathname-p "~/")
-  "~/")
-
-(deftest pathname-as-directory.1
-    (pathname-as-directory "/bin")
-  #P"/bin/")
-
-(deftest pathname-exist-p.1
-    (pathname-exist-p "/bin")
-  #P"/bin/")
-
-(deftest directory-exist-p.1
-    (directory-exist-p "/bin")
-  #P"/bin/")
-
-(deftest directory-exist-p.2
-    (directory-exist-p "/bin/bash")
-  nil)
-
-(deftest file-exist-p.1
-    (file-exist-p "/bin/bash")
-  #P"/bin/bash")
-
-(deftest file-exist-p.2
-    (file-exist-p "/bin")
-  nil)
-
-(deftest dirname.1
-    (dirname "/bin/bash")
-  #P"/bin/")
-
-(deftest dirname.2
-    (dirname "/bin/")
-  #P"/")
-
-(deftest dirname.3
-    (dirname "/")
-  #P"/")
-
-(deftest basename.1
-    (basename "/bin")
-  "bin")
-
-(deftest basename.2
-    (basename "/bin/bash")
-  "bash")
+(minitest (last1 '(1 2 3 4 5)) 5)
+(minitest (single '(1)) 1)
+(minitest (filter #'(lambda (x) (if (oddp x) x)) '(1 2 3 4 5)) '(1 3 5))
+(minitest (string-split "," "abc,def,ghi,jkl") '("abc" "def" "ghi" "jkl"))
+(minitest (string-split #\, "abc,def,ghi,jkl") '("abc" "def" "ghi" "jkl"))
+(minitest (string-join "," '("abc" "def" "ghi" "jkl")) "abc,def,ghi,jkl")
+(minitest (string-join #\, '("abc" "def" "ghi" "jkl")) "abc,def,ghi,jkl")
+(minitest (string+ "abc" "def" "efg") "abcdefefg")
+(minitest (namestring+ #P"/home/user/" "test" "." "lisp") "/home/user/test.lisp")
+(minitest (directory-pathname-p "~/test.lisp") nil)
+(minitest (directory-pathname-p "~/") "~/")
+(minitest (pathname-as-directory "/bin") #P"/bin/")
+(minitest (pathname-exist-p "/bin") #P"/bin/")
+(minitest (directory-exist-p "/bin") #P"/bin/")
+(minitest (directory-exist-p "/bin/bash") nil)
+(minitest (file-exist-p "/bin/bash") #P"/bin/bash")
+(minitest (file-exist-p "/bin") nil)
+(minitest (dirname "/bin/bash") #P"/bin/")
+(minitest (dirname "/bin/") #P"/")
+(minitest (dirname "/") #P"/")
+(minitest (basename "/bin") "bin")
+(minitest (basename "/bin/bash") "bash")
 
 ;;---------------------------------
 
-(defvar slobj1 (make-instance '<simplisp> :keyword :simplisp-test))
-(defvar slobj2 (make-instance '<simplisp> :keyword :simplisp-test.utils))
-(defvar slobj3 (make-instance '<simplisp> :keyword :simplisp-test.utils.string))
+(minitest (defvar slobj1 (make-instance '<simplisp> :keyword :simplisp-test)) 'SLOBJ1)
+(minitest (defvar slobj2 (make-instance '<simplisp> :keyword :simplisp-test.utils)) 'SLOBJ2)
+(minitest (defvar slobj3 (make-instance '<simplisp> :keyword :simplisp-test.utils.string)) 'SLOBJ3)
 
-(deftest simplisp-symbol.1
-    (simplisp-symbol slobj1)
-  :simplisp-test)
-(deftest simplisp-symbol.2
-    (simplisp-symbol slobj2)
-  :simplisp-test.utils)
-(deftest simplisp-symbol.3
-    (simplisp-symbol slobj3)
-  :simplisp-test.utils.string)
+(minitest (simplisp-symbol slobj1) :simplisp-test)
+(minitest (simplisp-symbol slobj2) :simplisp-test.utils)
+(minitest (simplisp-symbol slobj3) :simplisp-test.utils.string)
 
-(deftest child-system.1
-    (not (null (child-system slobj1)))
-  t)
-(deftest child-system.2
-    (child-system slobj2)
-  nil)
-(deftest child-system.3
-    (child-system slobj3)
-  nil)
+(minitest (null (child-system slobj1)) nil)
+(minitest (child-system slobj2) nil)
+(minitest (child-system slobj3) nil)
 
-(deftest child-module.1
-    (not (null (child-module slobj1)))
-  t)
-(deftest child-module.2
-    (not (null (child-module slobj2)))
-  t)
-(deftest child-module.3
-    (child-module slobj3)
-  nil)
+(minitest (null (child-module slobj1)) nil)
+(minitest (null (child-module slobj2)) nil)
+(minitest (child-module slobj3) nil)
 
-(deftest simplisp-load-object.1
-    (not (null (simplisp-load-object slobj1)))
-  t)
-(deftest simplisp-load-object.2
-    (not (null (simplisp-load-object slobj2)))
-  t)
-(deftest simplisp-load-object.3
-    (mapcar #'simplisp-symbol (simplisp-load-object slobj3))
-  (:simplisp-test.utils.string))
+(minitest (null (simplisp-all slobj1)) nil)
+(minitest (null (simplisp-all slobj2)) nil)
+(minitest (mapcar #'simplisp-symbol (simplisp-all slobj3))
+          '(:simplisp-test.utils.string))
 
-(deftest require.3
-    (require :simplisp-test.utils.string)
-  t)
-
-(deftest require.2
-    (require :simplisp-test.utils)
-  t)
-
-(deftest require.1
-    (require :simplisp-test)
-  t)
-
-(do-tests)
-(rem-all-tests)
+(minitest (require :simplisp-test.utils.string) t)
+(minitest (require :simplisp-test.utils) t)
+(minitest (require :simplisp-test) t)
 

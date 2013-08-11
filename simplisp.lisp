@@ -1,26 +1,20 @@
+(cl:defpackage #:simplisp
+  (:nicknames #:simple)
+  (:use #:cl)
+  (:shadow #:search
+           #:require
+           #:import
+           #:test))
 
-(cl:defpackage #:simplisp.utils
-  (:nicknames #:sl.utils)
-  (:use #:cl))
-
-(cl:in-package #:simplisp.utils)
+(cl:in-package #:simplisp)
 
 ;;===================
 ;; Macro
 ;;=================== 
 
-;; CL-USER> (performance 1000 (+ 1 2 3))
-;; Evaluation took:
-;;   0.000 seconds of real time
-;;   0.000119 seconds of total run time (0.000024 user, 0.000095 system)
-;;   100.00% CPU
-;;   2,232 processor cycles
-;;   0 bytes consed
-(export 'performance)
 (defmacro performance (times &body body)
   `(time (dotimes (x ,times) ,@body)))
 
-(export 'with-gensyms)
 (defmacro with-gensyms (syms &body body)
   `(let ,(mapcar #'(lambda (s)
                      `(,s (gensym)))
@@ -28,24 +22,46 @@
      ,@body))
 
 ;;===================
+;; Symbol
+;;=================== 
+
+(defun external-symbols (package)
+  (let (symbols)
+    (do-external-symbols (sym (find-package package))
+      (push sym symbols))
+    symbols))
+
+(defun typespecp (sym)
+  (if (or (multiple-value-bind (x y)
+              (ignore-errors (subtypep 't sym))
+            (and (null x) (eq 't y)))
+          (eq 't (ignore-errors (typep nil sym))))
+      (progn (print sym) t)))
+
+(defun defined-symbols (symbol)
+  (and
+    (eq *package* (symbol-package symbol))
+    (or (fboundp symbol)
+        (boundp symbol)
+        (find-class symbol nil)
+        (typespecp symbol))))
+
+;;===================
 ;; List
 ;;=================== 
 
 ;; CL-USER> (last1 '(1 2 3 4 5))
 ;; 5
-(export 'last1)
 (defun last1 (lst)
   (car (last lst)))
 
 ;; CL-USER> (single '(1))
 ;; 1
-(export 'single)
 (defun single (lst)
   (and (consp lst) (null (cdr lst)) (car lst)))
 
 ;; CL-USER> (filter #'(lambda (x) (if (oddp x) x)) '(1 2 3 4 5))
 ;; (1 3 5)
-(export 'filter)
 (defun filter (func lst)
   (let ((acc nil))
     (dolist (tmp lst (nreverse acc))
@@ -60,14 +76,13 @@
 ;; ("abc" "def" "ghi" "jkl")
 ;; CL-USER> (string-split #\, "abc,def,ghi,jkl")
 ;; ("abc" "def" "ghi" "jkl")
-(export 'string-split)
 (defun string-split (separator string &key (test #'char=))
   (let* ((sep (if (stringp separator) separator (princ-to-string separator)))
          (str (if (stringp string) string (princ-to-string string)))
          (sep-length (if (stringp separator) (length separator) 1)))
     (do* ((start 0 (+ end sep-length))
-          (end (search sep str :start2 start :test test)
-               (search sep str :start2 start :test test))
+          (end (cl:search sep str :start2 start :test test)
+               (cl:search sep str :start2 start :test test))
           (acc (cons (subseq str start end) nil)
                (cons (subseq str start end) acc)))
          ((null end) (nreverse acc)))))
@@ -76,7 +91,6 @@
 ;; "abc,def,ghi,jkl"
 ;; CL-USER> (string-join #\, '("abc" "def" "ghi" "jkl"))
 ;; "abc,def,ghi,jkl"
-(export 'string-join)
 (defun string-join (delimiter list)
   (if (listp list)
       (let ((del (if (stringp delimiter) delimiter (princ-to-string delimiter))))
@@ -86,19 +100,16 @@
 ;; "sl00p"
 ;; CL-USER> (string-gsub #\e #\0 "sleep")
 ;; "sl00p"
-(export 'string-gsub)
 (defun string-gsub (match replacement string &key (test #'char=))
   (string-join replacement (string-split match string :test test)))
 
 ;; CL-USER> (string+ "abc" "def" "efg")
 ;; "abcdefefg"
-(export 'string+)
 (defun string+ (&rest other-args)
   (string-join "" other-args))
 
 ;; CL-USER> (namestring+ #P"/home/user/" "test" "." "lisp")
 ;; "/home/user/test.lisp"
-(export 'namestring+)
 (defun namestring+ (&rest other-args)
   (string-join "" (mapcar #'(lambda (x) (cond ((null x) "")
                                               ((stringp x) x)
@@ -115,7 +126,6 @@
 (defun component-present-p (value)
   (and value (not (eql value :unspecific))))
 
-(export 'directory-pathname-p)
 (defun directory-pathname-p (pathspec)
   (if pathspec
       (and
@@ -123,7 +133,6 @@
        (not (component-present-p (pathname-type pathspec)))
        pathspec)))
 
-(export 'pathname-as-directory)
 (defun pathname-as-directory (pathspec)
   (let ((pathname (pathname pathspec)))
     (when (wild-pathname-p pathname)
@@ -154,7 +163,6 @@
                  :type nil
                  :defaults wildcard))
 
-(export 'list-directory)
 (defun list-directory (dirname &key (follow-symlinks t))
   (declare (ignorable follow-symlinks))
   (when (wild-pathname-p dirname)
@@ -227,7 +235,6 @@
 
 ;; CL-USER> (pathname-exist-p #P"~")
 ;; #P"/home/user/"
-(export 'pathname-exist-p)
 (defun pathname-exist-p (pathspec)
   (let ((pathname (file-exists-p pathspec)))
     (if pathname
@@ -237,7 +244,6 @@
 ;; #P"/home/user/"
 ;; CL-USER> (directory-exist-p #P"~/test.lisp")
 ;; NIL
-(export 'directory-exist-p)
 (defun directory-exist-p (pathspec)
   (if pathspec
       (let ((pathname (pathname-exist-p pathspec)))
@@ -248,7 +254,6 @@
 ;; NIL
 ;; CL-USER> (file-exist-p #P"/home/user/test.lisp")
 ;; #P"/home/test/test.lisp"
-(export 'file-exist-p)
 (defun file-exist-p (pathspec)
   (if pathspec
       (let ((pathname (pathname-exist-p pathspec)))
@@ -257,7 +262,6 @@
 
 ;; CL-USER> (dirname #P"/home/user/")
 ;; #P"/home/"
-(export 'dirname)
 (defun dirname (pathspec)
   (let ((pathname (pathname-exist-p pathspec)))
     (if pathname
@@ -271,7 +275,6 @@
 ;; "user"
 ;; CL-USER> (basename #P"/home/user/test.lisp")
 ;; "test.lisp"
-(export 'basename)
 (defun basename (pathspec)
   (let ((pathname (pathname-exist-p pathspec)))
     (if pathname
@@ -279,51 +282,36 @@
             (car (last (pathname-directory pathname)))
             (file-namestring pathname)))))
 
-
-
-(cl:defpackage #:simplisp
-  (:nicknames #:sl)
-  (:use #:cl #:simplisp.utils))
-
-(cl:in-package #:simplisp)
-
 ;;===================
 ;; OPTIONS
 ;;=================== 
 
-(export '*load-paths*)
-(defparameter *load-paths* '("./" "../" "~/" "~/.lisp/"))
-
+(export '*repository*)
+(defparameter *repository* '("./" "../" "~/" "~/.lisp/"))
+(push (dirname *load-pathname*) *repository*)
 (defparameter *main-file* "__main__.lisp")
 (defparameter *test-file* "__test__.lisp")
 (defparameter *ignore-files* (list *main-file* *test-file*))
-
-(export '*extension*)
 (defparameter *extension* "lisp")
-
-(export 'add-load-paths)
-(defun add-load-paths (&rest load-paths)
-  (nconc *load-paths* load-paths))
-
 
 ;;===================
 ;; SIMPLISP CLASS
 ;;=================== 
 
 (defclass <simplisp-option> ()
-  ((load-paths
-    :accessor load-paths
-    :initform *load-paths*)
+  ((repository
+    :accessor repository
+    :initform *repository*)
    (main-file
     :accessor main-file
     :initform *main-file*)
    (extension
     :accessor extension
     :initform *extension*)
-   (expand-load-paths
-    :accessor expand-load-paths
+   (expand-repository
+    :accessor expand-repository
     :initform (let ((acc nil))
-                (dolist (tmp *load-paths* (nreverse acc))
+                (dolist (tmp *repository* (nreverse acc))
                   (dolist (tmp (directory tmp) acc)
                     (let ((x (directory-exist-p tmp)))
                       (if x (push x acc)))))))))
@@ -370,15 +358,15 @@
 (defmethod simplisp-search ((simplisp <simplisp>))
   (with-accessors ((main-file main-file)
                    (extension extension)
-                   (expand-load-paths expand-load-paths)
+                   (expand-repository expand-repository)
                    (keyword simplisp-keyword)
                    (symbol simplisp-symbol)
                    (where simplisp-where)
                    (prefix simplisp-prefix)
                    (type simplisp-type)) simplisp
     (let ((key (string-gsub #\. #\/ (symbol-name keyword))))
-      (do* ((load-paths expand-load-paths (cdr load-paths))
-            (lp (car load-paths) (car load-paths))
+      (do* ((repository expand-repository (cdr repository))
+            (lp (car repository) (car repository))
             (path (namestring+ lp "/" key) (namestring+ lp "/" key))
             (acc (simplisp-type-system-p simplisp path) (simplisp-type-system-p simplisp path)))
            ((or where (null lp)) (if where simplisp nil))
@@ -396,16 +384,16 @@
                                 acc)))
           (rec path)))))
 
-(defmethod simplisp-make-symbol ((simplisp <simplisp-option>) simplisp-root-dir simplisp-where)
+(defmethod simplisp-make-symbol ((simplisp <simplisp-option>) simplisp-root-path simplisp-where)
   (intern (string-upcase
            (string-gsub
             (string+ "." (extension simplisp)) ""
             (string-gsub "/" "."
-                         (string-trim "/" (string-gsub (namestring simplisp-root-dir) ""
+                         (string-trim "/" (string-gsub (namestring simplisp-root-path) ""
                                                        (namestring simplisp-where))))))
           "KEYWORD"))
 
-(defmethod simplisp-root ((simplisp <simplisp>))
+(defmethod simplisp-chroot ((simplisp <simplisp>))
   (with-accessors ((where simplisp-where)
                    (keyword simplisp-keyword)
                    (symbol simplisp-symbol)
@@ -425,7 +413,7 @@
     (if (null (and symbol where prefix type))
         (progn
           (if (simplisp-search simplisp)
-              (simplisp-root simplisp))))))
+              (simplisp-chroot simplisp))))))
 
 (defmethod child-system ((simplisp <simplisp>))
   (if (eql :system (simplisp-type simplisp))
@@ -457,7 +445,7 @@
                                 :type      :module)
                  acc)))))))
 
-(defmethod simplisp-load-object ((simplisp <simplisp>))
+(defmethod simplisp-all ((simplisp <simplisp>))
   (let (acc)
     (labels ((rec (pkg)
                (let ((system (child-system pkg))
@@ -480,56 +468,86 @@
          (defpackage ,symbol (:use #:cl))
          (in-package ,symbol)
          (format t "~S~%" *package*)
-         (if ,(eql :system type)
-             (dolist (pkg ',(mapcar #'simplisp-symbol (nconc (child-system simplisp) (child-module simplisp))))
-                 (use-package pkg)))
          (cl:load ,path)
          (if ,(eql :module type)
              (do-symbols (sym)
-               (if (and (eq *package* (symbol-package sym))
-                        (or (fboundp sym) (boundp sym)))
+               (if (defined-symbols sym)
                    (export sym))))
          (in-package ,current)))))
 
 ;;===================
 ;; SEARCH
-;; REQUIRE,IMPORT
-;; EXPORT,TEST
+;; REQUIRE
+;; IMPORT
+;; TEST
 ;;=================== 
 
-(shadow 'search)
+;;(shadow 'search)
 (export 'search)
 (defun search (system)
   (let ((obj (make-instance '<simplisp> :keyword system)))
     (if (simplisp-symbol obj)
         (simplisp-where obj))))
 
-(defparameter *require* (make-hash-table :test #'eql))
+(export '*provide*)
+(defparameter *provide* (make-hash-table :test #'eql))
 
-(shadow 'require)
-(export 'require)
-(defun require (system &key (force nil))
+(defun %require (system &key (force nil))
   (let ((obj (make-instance '<simplisp> :keyword system)))
     (if (simplisp-symbol obj)
-        (let ((objs (nreverse (simplisp-load-object obj))))
+        (progn
           (if force
-              (dolist (obj objs T)
-                (setf (gethash (simplisp-symbol obj) *require*) nil)))
-          (dolist (obj objs T)
-            (if (null (gethash (simplisp-symbol obj) *require*))
-                (progn
-                  (eval (simplisp-require-form obj))
-                  (setf (gethash (simplisp-symbol obj) *require*) obj)))))
-        (error "Not Found Package."))))
+              (dolist (obj (simplisp-all obj) t)
+                (setf (gethash (simplisp-symbol obj) *provide*) nil)))
+          (if (null (gethash (simplisp-symbol obj) *provide*))
+            (progn
+              (eval (simplisp-require-form obj))
+              (setf (gethash (simplisp-symbol obj) *provide*) obj)
+              t)))
+        (error (format nil "Not found system(~A)." system)))))
 
-(shadow 'import)
+(export 'require)
+(defun require (system-or-systems &key (force nil))
+  (if (listp system-or-systems)
+      (dolist (sys system-or-systems t)
+        (%require sys :force force))
+      (%require system-or-systems :force force)))
+
+(defun %import (system &key (force nil))
+  (%require system :force force)
+  (if (null (member (symbol-name system)
+                    (mapcar #'package-name (package-use-list *package*))))
+      (use-package system)))
+
 (export 'import)
-(defun import (system &key (force nil))
-  (progn
-    (require system :force force)
-    (use-package system)))
+(defun import (system-or-systems &key (force nil))
+  (if (listp system-or-systems)
+      (dolist (sys system-or-systems t)
+        (%import sys :force force))
+      (%import system-or-systems :force force)))
 
-(shadow 'test)
+(export 'attach)
+(defun attach (system-or-systems)
+  (if (listp system-or-systems)
+      (dolist (system system-or-systems)
+        (progn
+          (import system)
+          (export (external-symbols system))))
+      (progn
+        (import system-or-systems)
+        (export (external-symbols system-or-systems)))))
+
+(export 'detach)
+(defun detach (system-or-systems)
+  (if (listp system-or-systems)
+      (dolist (system system-or-systems)
+        (progn
+          (unexport (external-symbols system))
+          (unuse-package system)))
+      (progn
+        (unexport (external-symbols system-or-systems))
+        (unuse-package system-or-systems))))
+
 (export 'test)
 (defmacro test (system)
   (let* ((obj (make-instance '<simplisp> :keyword system))
@@ -540,37 +558,13 @@
     (if (and (eql :system (simplisp-type obj))
              (file-exist-p test-file))
         `(progn
-           (require ,base-symbol)
-           
            (defpackage ,test-symbol
              (:use :cl))
            (in-package ,test-symbol)
-           (format t "~%---------Test Start---------~%")
-           (format t "~S~%" *package*)
+           (format t "~%---------Test Start---------~%~S~%" *package*)
            (load ,test-file)
-           (in-package ,current)
            (format t "~%----------Test End----------~%")
+           (in-package ,current)
            t)
         (error (format nil "Not Found ~a.~%" *test-file*)))))
-
-(export 'external-symbols)
-(defun external-symbols (package)
-  (let (symbols)
-    (do-external-symbols (sym (find-package package))
-      (push sym symbols))
-    symbols))
-
-(export 'external-symbols-export)
-(defun external-symbols-export (&rest packages)
-  (dolist (package packages t)
-    (do-external-symbols (sym (find-package package))
-      (export sym))))
-
-(export 'inherit-export)
-(defun inherit-export ()
-  (let* ((pkg (make-instance '<simplisp> :keyword (intern (package-name *package*) "KEYWORD")))
-         (lst (nconc (child-system pkg) (child-module pkg))))
-    (dolist (l lst t) (external-symbols-export (simplisp-symbol l)))))
-
-
 

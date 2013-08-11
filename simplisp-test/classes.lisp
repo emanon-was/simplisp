@@ -1,30 +1,28 @@
-(sl:import :simplisp-test.utils)
-(sl:import :simplisp-test.options)
+(simple:import '(:simplisp-test.utils
+                 :simplisp-test.options))
 
 ;;===================
 ;; SIMPLISP CLASS
 ;;=================== 
 
-(export '<simplisp-option>)
 (defclass <simplisp-option> ()
-  ((load-paths
-    :accessor load-paths
-    :initform *load-paths*)
+  ((repository
+    :accessor repository
+    :initform *repository*)
    (main-file
     :accessor main-file
     :initform *main-file*)
    (extension
     :accessor extension
     :initform *extension*)
-   (expand-load-paths
-    :accessor expand-load-paths
+   (expand-repository
+    :accessor expand-repository
     :initform (let ((acc nil))
-                (dolist (tmp *load-paths* (nreverse acc))
+                (dolist (tmp *repository* (nreverse acc))
                   (dolist (tmp (directory tmp) acc)
                     (let ((x (directory-exist-p tmp)))
                       (if x (push x acc)))))))))
 
-(export '<simplisp>)
 (defclass <simplisp> (<simplisp-option>)
   ((keyword
     :accessor simplisp-keyword
@@ -67,15 +65,15 @@
 (defmethod simplisp-search ((simplisp <simplisp>))
   (with-accessors ((main-file main-file)
                    (extension extension)
-                   (expand-load-paths expand-load-paths)
+                   (expand-repository expand-repository)
                    (keyword simplisp-keyword)
                    (symbol simplisp-symbol)
                    (where simplisp-where)
                    (prefix simplisp-prefix)
                    (type simplisp-type)) simplisp
     (let ((key (string-gsub #\. #\/ (symbol-name keyword))))
-      (do* ((load-paths expand-load-paths (cdr load-paths))
-            (lp (car load-paths) (car load-paths))
+      (do* ((repository expand-repository (cdr repository))
+            (lp (car repository) (car repository))
             (path (namestring+ lp "/" key) (namestring+ lp "/" key))
             (acc (simplisp-type-system-p simplisp path) (simplisp-type-system-p simplisp path)))
            ((or where (null lp)) (if where simplisp nil))
@@ -93,16 +91,16 @@
                                 acc)))
           (rec path)))))
 
-(defmethod simplisp-make-symbol ((simplisp <simplisp-option>) simplisp-root-dir simplisp-where)
+(defmethod simplisp-make-symbol ((simplisp <simplisp-option>) simplisp-root-path simplisp-where)
   (intern (string-upcase
            (string-gsub
             (string+ "." (extension simplisp)) ""
             (string-gsub "/" "."
-                         (string-trim "/" (string-gsub (namestring simplisp-root-dir) ""
+                         (string-trim "/" (string-gsub (namestring simplisp-root-path) ""
                                                        (namestring simplisp-where))))))
           "KEYWORD"))
 
-(defmethod simplisp-root ((simplisp <simplisp>))
+(defmethod simplisp-chroot ((simplisp <simplisp>))
   (with-accessors ((where simplisp-where)
                    (keyword simplisp-keyword)
                    (symbol simplisp-symbol)
@@ -122,7 +120,7 @@
     (if (null (and symbol where prefix type))
         (progn
           (if (simplisp-search simplisp)
-              (simplisp-root simplisp))))))
+              (simplisp-chroot simplisp))))))
 
 (defmethod child-system ((simplisp <simplisp>))
   (if (eql :system (simplisp-type simplisp))
@@ -154,7 +152,7 @@
                                 :type      :module)
                  acc)))))))
 
-(defmethod simplisp-load-object ((simplisp <simplisp>))
+(defmethod simplisp-all ((simplisp <simplisp>))
   (let (acc)
     (labels ((rec (pkg)
                (let ((system (child-system pkg))
@@ -177,10 +175,11 @@
          (defpackage ,symbol (:use #:cl))
          (in-package ,symbol)
          (format t "~S~%" *package*)
-         (if ,(eql :system type)
-             (dolist (pkg ',(mapcar #'simplisp-symbol (nconc (child-system simplisp) (child-module simplisp))))
-                 (use-package pkg)))
          (cl:load ,path)
+         (if ,(eql :module type)
+             (do-symbols (sym)
+               (if (defined-symbols sym)
+                   (export sym))))
          (in-package ,current)))))
 
 

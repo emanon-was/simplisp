@@ -30,14 +30,14 @@ Directory to read have "__main__.lisp"
 
 ### Load Paths ###
 
-    CL-USER> sl::*load-paths*
+    CL-USER> simple:*repository*
     ("./" "../" "~/")
-    CL-USER> (sl:add-load-paths "~/.lisp/")
-    ("./" "../" "~/" "~/.lisp/")
+    CL-USER> (push  "~/.lisp/" simple:*repository*)
+    ("~/.lisp/" "./" "../" "~/")
 
 ### Require System ###
 
-    CL-USER> (sl:require :test)
+    CL-USER> (simple:require :test)
     #<PACKAGE TEST.UTILS.LIST>
     #<PACKAGE TEST.UTILS.PATH>
     ....
@@ -46,7 +46,7 @@ Directory to read have "__main__.lisp"
  
 Can also require the partial
 
-    CL-USER> (sl:require :test.utils)
+    CL-USER> (simple:require :test.utils)
     #<PACKAGE TEST.UTILS.LIST>
     #<PACKAGE TEST.UTILS.PATH>
     ....
@@ -55,55 +55,41 @@ Can also require the partial
 
 If you want to reload
 
-    CL-USER> (sl:require :test.utils.string :force t)
+    CL-USER> (simple:require :test.utils.string :force t)
     #<PACKAGE TEST.UTILS.STRING>
 
 ### Import System ###
 
-If you want to write system that depends on (require & use-package)
+'require and 'use-package
 
-    (sl:import :test.utils)
+    (simple:import :test.utils)
 
 ### Export Symbols ###
 
-There is no need to write "export" in other than "__main__.lisp"  
-If you want to inherit all of the export function of the same layer
+There is no need to write "export" in other than "__main__.lisp".  
+But if you want to export all of other package's external symbols
 
-    in "__main__.lisp"
-    (sl:inherit-export)
+    (simple:attach :test.options)
 
-If you want to inherit-export the partical
-
-    in "__main__.lisp"
-    (sl:external-symbols-export :test.utils)
-
+    (simple:attach '(:test.utils.string
+                     :test.utils.list))
 
 ### Test System ###
 
 load "__test__.lisp"
 
-    CL-USER> (sl:test :test.utils)
+    CL-USER> (simple:test :test.utils)
     ---------Test Start---------
     #<PACKAGE TEST.UTILS-TEST>
     ;; Loading file /Users/emanon/.simplisp/test/utils/__test__.lisp ...
-    Doing 22 pending tests of 22 tests total.
-     LAST1.1 SINGLE.1 FILTER.1 STRING-SPLIT.1 STRING-SPLIT.2 STRING-JOIN.1
      .......
-     DIRNAME.1 DIRNAME.2 DIRNAME.3 BASENAME.1 BASENAME.2
-    No tests failed.
     ;; Loaded file /Users/emanon/.simplisp/test/utils/__test__.lisp
     ----------Test End----------
 
-### ETC ###
+### Search System ###
 
-    CL-USER> (sl:search :test.utils)
+    CL-USER> (simple:search :test.utils)
     #P"/home/user/test/utils/"
-
-    CL-USER> (sl:external-symbols :test.utils)
-    (TEST.UTILS.STRING:STRING+
-     TEST.UTILS.LIST:FILTER
-     TEST.UTILS.LIST:LAST1
-     TEST.UTILS.PATH:BASENAME .... )
 
 Implementation
 ------

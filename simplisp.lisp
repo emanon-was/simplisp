@@ -32,11 +32,10 @@
     symbols))
 
 (defun typespecp (sym)
-  (if (or (multiple-value-bind (x y)
+  (or (multiple-value-bind (x y)
               (ignore-errors (subtypep 't sym))
             (and (null x) (eq 't y)))
-          (eq 't (ignore-errors (typep nil sym))))
-      (progn (print sym) t)))
+      (eq 't (ignore-errors (typep nil sym)))))
 
 (defun defined-symbols (symbol)
   (and
@@ -338,6 +337,7 @@
     :initarg :type
     :initform nil)))
 
+(defgeneric simplisp-type-system-p (simplisp pathspec))
 (defmethod simplisp-type-system-p ((simplisp <simplisp-option>) pathspec)
   (with-accessors ((main-file main-file)) simplisp
     (let ((pathname (directory-exist-p pathspec)))
@@ -345,6 +345,7 @@
            (file-exist-p (namestring+ pathname "/" main-file))
            pathname))))
 
+(defgeneric simplisp-type-module-p (simplisp pathspec))
 (defmethod simplisp-type-module-p ((simplisp <simplisp-option>) pathspec)
   (with-accessors ((main-file main-file)
                    (extension extension)) simplisp
@@ -355,6 +356,7 @@
            (simplisp-type-system-p simplisp (dirname pathname))
            pathname))))
 
+(defgeneric simplisp-search (simplisp))
 (defmethod simplisp-search ((simplisp <simplisp>))
   (with-accessors ((main-file main-file)
                    (extension extension)
@@ -375,6 +377,7 @@
               ((setq acc (simplisp-type-module-p simplisp (namestring+ path "." extension)))
                (setq prefix lp where acc type :module)))))))
 
+(defgeneric simplisp-root-path (simplisp pathspec))
 (defmethod simplisp-root-path ((simplisp <simplisp-option>) pathspec)
   (let ((path (or (simplisp-type-system-p simplisp pathspec)
                   (dirname (simplisp-type-module-p simplisp pathspec)))))
@@ -384,6 +387,7 @@
                                 acc)))
           (rec path)))))
 
+(defgeneric simplisp-make-symbol (simplisp simplisp-root-path simplisp-where))
 (defmethod simplisp-make-symbol ((simplisp <simplisp-option>) simplisp-root-path simplisp-where)
   (intern (string-upcase
            (string-gsub
@@ -393,6 +397,7 @@
                                                        (namestring simplisp-where))))))
           "KEYWORD"))
 
+(defgeneric simplisp-chroot (simplisp))
 (defmethod simplisp-chroot ((simplisp <simplisp>))
   (with-accessors ((where simplisp-where)
                    (keyword simplisp-keyword)
@@ -415,6 +420,7 @@
           (if (simplisp-search simplisp)
               (simplisp-chroot simplisp))))))
 
+(defgeneric child-system (simplisp))
 (defmethod child-system ((simplisp <simplisp>))
   (if (eql :system (simplisp-type simplisp))
       (let (acc)
@@ -430,6 +436,7 @@
                                 :type      :system)
                  acc)))))))
 
+(defgeneric child-module (simplisp))
 (defmethod child-module ((simplisp <simplisp>))
   (if (eql :system (simplisp-type simplisp))
       (let (acc)
@@ -445,6 +452,7 @@
                                 :type      :module)
                  acc)))))))
 
+(defgeneric simplisp-all (simplisp))
 (defmethod simplisp-all ((simplisp <simplisp>))
   (let (acc)
     (labels ((rec (pkg)
@@ -455,6 +463,7 @@
                  (push pkg acc))))
       (rec simplisp))))
 
+(defgeneric simplisp-require-form (simplisp))
 (defmethod simplisp-require-form ((simplisp <simplisp>))
   (with-accessors ((main-file main-file)
                    (symbol simplisp-symbol)
@@ -482,7 +491,6 @@
 ;; TEST
 ;;=================== 
 
-;;(shadow 'search)
 (export 'search)
 (defun search (system)
   (let ((obj (make-instance '<simplisp> :keyword system)))
